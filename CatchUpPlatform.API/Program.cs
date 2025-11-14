@@ -108,9 +108,4 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-// Forzar escucha en el puerto que pasa Render (o 8080 por defecto)
-var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
-app.Urls.Clear();
-app.Urls.Add($"http://*:{port}");
-
 app.Run();
