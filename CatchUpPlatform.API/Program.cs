@@ -85,10 +85,23 @@ using (var scope = app.Services.CreateScope())
     context.Database.EnsureCreated();
 }
 
+
+
+// Forwarded headers — necesario cuando TLS se termina en el proxy (Render)
+var forwardedOptions = new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+};
+// Permitir proxies desconocidos (Render no siempre está en KnownProxies)
+forwardedOptions.KnownNetworks.Clear();
+forwardedOptions.KnownProxies.Clear();
+app.UseForwardedHeaders(forwardedOptions);
+
+
 // Configure the HTTP request pipeline.
 //if (app.Environment.IsDevelopment())
 //{
-    app.UseSwagger();
+app.UseSwagger();
     app.UseSwaggerUI();
 //}
 
@@ -101,11 +114,23 @@ using (var scope = app.Services.CreateScope())
 localizationOptions.ApplyCurrentCultureToResponseHeaders = true;
 app.UseRequestLocalization(localizationOptions);
 
-
-app.UseHttpsRedirection();
+if (app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseAuthorization();
 
+// Ruta raíz para evitar 404 en "/"
+app.MapGet("/", () => Results.Ok("CatchUpPlatform API is running"));
+
 app.MapControllers();
+
+
+// Forzar escucha en el puerto que suministra Render (env var PORT)
+var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+app.Urls.Clear();
+app.Urls.Add($"http://*:{port}");
+Console.WriteLine($"Listening on http://*:{port}");
 
 app.Run();
